@@ -26,6 +26,8 @@ class FIDEX_edge(object):
         self.start = start
         self.end = end
 
+
+
     def __str__(self):
         return f'Edge({self.start}, {self.end})'
 
@@ -45,6 +47,33 @@ class FIDEX_node(object):
 
     def remove_marking(self, marking):
         self.markings.remove(marking)
+
+    def path_printer(self, current_path : List[tokens.FIDEX_token]):
+        if self.has_marking(FIDEX_marking.FINISH):
+            print(current_path)
+        for edge in self.edges:
+            for w in edge.W_set:
+                edge.end.path_printer(current_path + [w])
+
+
+    def match(self, s : str) -> bool:
+        if s == '' and self.has_marking(FIDEX_marking.FINISH):
+            return True
+        for edge in self.edges:
+            for token in edge.W_set:
+                split = token.split_match(s)
+                if split is None:
+                    continue
+                else:
+                    # if the rest is '' and the node is a finish node, it's a match.
+                    (match, rest) = split
+                    did_match = edge.end.match(rest)
+                    if did_match:
+                        return True
+                    else:
+                        continue
+        return False
+
 
     def __str__(self):
         return f'Node({self.id})'
@@ -69,7 +98,18 @@ class FIDEX_DAG(object):
     def __init__(self, all_nodes : List[FIDEX_node]):
         self.all_nodes = all_nodes
         self.start_nodes = [node for node in all_nodes
-                            if node.marking == FIDEX_marking.START]
+                            if node.has_marking(FIDEX_marking.START)]
+
+    def match(self, s : str) -> bool:
+        for node in self.start_nodes:
+            if node.match(s):
+                return True
+        return False
+
+    def print_all_paths(self):
+        for node in self.start_nodes:
+            node.path_printer([])
+
 
     # currently we make a copy from all the nodes that are in
     def copy(self, tolerate_incomplete_copy=False) -> 'FIDEX_DAG':
@@ -96,7 +136,8 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
     new_all_nodes = orig_dag.all_nodes + new_nodes
     # we could do a copy with incomplete tolerance here to "clean" up any newly
     # unreachable parts of the DAG, but I don't think it hurts very much to keep them around.
-    new_dag = FIDEX_DAG(new_all_nodes).copy(tolerate_incomplete_copy=True)
+    # TODO this still doesnt seem to remove the dangling edges.
+    new_dag = FIDEX_DAG(new_all_nodes)
     return new_dag
 
 
@@ -111,16 +152,47 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
             non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
             minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
             non_minus_edge = FIDEX_edge(new_node, node_edge.end, non_minus_condition)
-            minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end)
+            minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end, new_nodes)
             minus_edge = FIDEX_edge(new_node, minus_edge_node, minus_condition)
             new_node.edges.append(non_minus_edge)
             new_node.edges.append(minus_edge)
     return new_node
 
+def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,
+                            node_dict : Dict[Tuple[int,int],FIDEX_node]) -> FIDEX_node:
+    # grab the node from the store if possible, otherwise create it.
+    if (node1.id, node2.id) in node_dict:
+        return node_dict[(node1.id, node2.id)]
+    new_node = FIDEX_node([])
+    node_dict[(node1.id, node2.id)] = new_node
+    # set the start / finish markings of the new node.
+    if node1.has_marking(FIDEX_marking.START) and node2.has_marking(FIDEX_marking.START):
+        new_node.add_marking(FIDEX_marking.START)
+    if node1.has_marking(FIDEX_marking.FINISH) and node2.has_marking(FIDEX_marking.FINISH):
+        new_node.add_marking(FIDEX_marking.FINISH)
+    # build the edges of the new node
+    for node1_edge in node1.edges:
+        for node2_edge in node2.edges:
+            end_node = DAG_intersect_from_node(node1_edge.end, node2_edge.end, node_dict)
+            #print(node1_edge.W_set, node2_edge.W_set)
+            new_W_set = (node1_edge.W_set.intersection(node2_edge.W_set)).copy()
+            new_edge = FIDEX_edge(new_node, end_node, new_W_set)
+            new_node.edges.append(new_edge)
+    return new_node
+
 def DAG_intersect(dag1 : FIDEX_DAG, dag2 : FIDEX_DAG) -> FIDEX_DAG:
+    node_dict = dict()
     for node1 in dag1.all_nodes:
         for node2 in dag2.all_nodes:
-            pass
+            DAG_intersect_from_node(node1, node2, node_dict)
+    all_nodes = list(node_dict.values())
+    return FIDEX_DAG(all_nodes)
+
+
+
+
+
+
 
 
 

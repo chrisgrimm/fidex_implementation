@@ -8,6 +8,7 @@ def genDAG_nodes(s : str) -> List[FIDEX_node]:
     #nodes[0].marking = FIDEX_marking.START
     #nodes[len(s)].marking = FIDEX_marking.FINISH
 
+    # create all the edges.
     edge_mapping = dict()
     for i, node in enumerate(nodes):
         for j, other_node in enumerate(nodes):
@@ -17,6 +18,7 @@ def genDAG_nodes(s : str) -> List[FIDEX_node]:
             node.edges.append(edge)
             edge_mapping[(i,j)] = edge
 
+    # matches maps edge indices to sets of matching tokens.
     # get all the tokens that match
     matches = dict()
     for (i,j) in edge_mapping:
@@ -29,9 +31,9 @@ def genDAG_nodes(s : str) -> List[FIDEX_node]:
                 matches[(i,j)] = {token}
 
     # filter out the ones that we don't want
-    i_list = sorted([i for (i,j) in edge_mapping.keys()])
+    i_list = sorted([i for (i,j) in matches.keys()])
     for i in i_list:
-        j_list = sorted([j for (ii,j) in edge_mapping.keys() if ii == i], reverse=True)
+        j_list = sorted([j for (ii,j) in matches.keys() if ii == i], reverse=True)
         for j_idx, j in enumerate(j_list):
             for matched_token in matches[(i,j)]:
                 for jj in j_list[j_idx+1:]:
@@ -42,6 +44,8 @@ def genDAG_nodes(s : str) -> List[FIDEX_node]:
 
     # apply the remaining matches to their edges
     for (i,j), edge in edge_mapping.items():
+        if (i,j) not in matches:
+            continue
         for match in matches[(i,j)]:
             edge.W_set.add(match)
 
