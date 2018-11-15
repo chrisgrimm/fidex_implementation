@@ -63,7 +63,9 @@ class SequenceToken(FIDEX_token):
             return (match_string, rest_string)
 
 tokens : List[FIDEX_token] = []
+
 tokens += [ConstantToken(letter) for letter in 'abcdefghijklmnopqrstuvwxyz']
+letters = {letter : token for letter, token in zip('abcdefghijklmnopqrstuvwxyz',tokens)}
 tokens += [ConstantToken(letter) for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 tokens += [ConstantToken(number) for number in '0123456789']
 tokens += [GeneralToken('-', '\-'),
@@ -77,12 +79,14 @@ tokens += [GeneralToken('-', '\-'),
            GeneralToken('/', '\/'),
            GeneralToken('\\', '\\\\'),
            GeneralToken(' ', '\s')]
-tokens += [GeneralToken('UPPERCASE', '[A-Z]'),
-           GeneralToken('LOWERCASE', '[a-z]'),
+tokens += [#GeneralToken('UPPERCASE', '[A-Z]'),
+           #GeneralToken('LOWERCASE', '[a-z]'),
            GeneralToken('ALPHA', '[A-Za-z]'),
-           GeneralToken('DIGIT', '\d')]
+           #GeneralToken('DIGIT', '\d')
+          ]
            #GeneralToken('ALPHANUMERIC', '[a-zA-Z\d]')]
-tokens += [SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
-           SequenceToken('LOWERCASE_SEQ', '[a-z]'),
-           SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
-           SequenceToken('DIGIT_SEQ', '\d')]
+tokens += [#SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
+           #SequenceToken('LOWERCASE_SEQ', '[a-z]'),
+           #SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
+           #SequenceToken('DIGIT_SEQ', '\d')
+          ]

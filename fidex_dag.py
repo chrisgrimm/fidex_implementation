@@ -29,13 +29,15 @@ class FIDEX_edge(object):
 
 
     def __str__(self):
-        return f'Edge({self.start}, {self.end})'
+        return f'Edge({self.start}, {self.end}, {self.W_set})'
 
 class FIDEX_node(object):
 
     def __init__(self, edges : List[FIDEX_edge], id=None):
         if id is None:
             self.id = next(id_generator)
+        else:
+            self.id = id
         self.edges = edges
         self.markings = set()
 
@@ -52,6 +54,8 @@ class FIDEX_node(object):
         if self.has_marking(FIDEX_marking.FINISH):
             print(current_path)
         for edge in self.edges:
+            if len(edge.W_set) == 0:
+                edge.end.path_printer(current_path + ['EMPTY'])
             for w in edge.W_set:
                 edge.end.path_printer(current_path + [w])
 
@@ -62,6 +66,7 @@ class FIDEX_node(object):
         for edge in self.edges:
             for token in edge.W_set:
                 split = token.split_match(s)
+                print(split)
                 if split is None:
                     continue
                 else:
@@ -143,12 +148,17 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
 
 def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
                         new_nodes : List[FIDEX_node]) -> FIDEX_node:
+    # copy the original node and add it to the list of created nodes.
     new_node = FIDEX_node([])
     new_nodes.append(new_node)
+
     if orig_node.has_marking(FIDEX_marking.FINISH) and not minus_node.has_marking(FIDEX_marking.FINISH):
         new_node.add_marking(FIDEX_marking.FINISH)
     for node_edge in orig_node.edges:
         for minus_edge in minus_node.edges:
+            # TODO I think their alogrithm doesnt work if there are edges that have nothing in their Wset.
+            if len(minus_edge.W_set) == 0 or len(node_edge.W_set) == 0:
+                continue
             non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
             minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
             non_minus_edge = FIDEX_edge(new_node, node_edge.end, non_minus_condition)
