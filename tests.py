@@ -1,10 +1,14 @@
 import genDAG
 import fidex_dag
 import tokens
+import pandas as pd
+from termcolor import colored
+from typing import List, Callable
 
 
-cat_dag = genDAG.generate_startswith('cat')
-dog_dag = genDAG.generate_startswith('dog')
+#cat_dag = genDAG.generate_startswith('cat')
+end_a = genDAG.generate_endswith('cat')
+start_b = genDAG.generate_startswith('dogs')
 
 q = [fidex_dag.FIDEX_node([]) for _ in range(6)]
 # build D1
@@ -32,9 +36,34 @@ D2 = fidex_dag.FIDEX_DAG([q[3], q[4], q[5]])
 #combined_dag = fidex_dag.DAG_minus(D1, D2)
 #combined_dag.print_all_paths()
 
+def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG], assertion_function : Callable[[List[bool]], bool]):
+    all_paths = []
+    for dag in dags:
+        all_paths.extend([tuple(x) for x in dag.get_all_paths()])
+    all_paths = list(set(all_paths))
+    path_sets = []
+    for dag in dags:
+        path_sets.append(set([tuple(x) for x in dag.get_all_paths()]))
+
+    all_inclusions = []
+    for path in all_paths:
+        inclusions = []
+        for path_set in path_sets:
+            inclusions.append(path in path_set)
+        all_inclusions.append(inclusions)
+    for path, inclusions in zip(all_paths, all_inclusions):
+        assertion_res = assertion_function(inclusions)
+        text = colored('SUCCESS', 'green') if assertion_res else colored('FAILURE', 'red')
+        print(path, inclusions, text)
 
 
-combined_dag = fidex_dag.DAG_minus(cat_dag, dog_dag)
-combined_dag.print_all_paths()
-print(combined_dag.match('cat'))
-print(combined_dag.match('dog'))
+#combined_dag = fidex_dag.DAG_minus(cat_dag, dog_dag)
+combined_dag = fidex_dag.DAG_minus(start_b, end_a)
+print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and (not x[1])) == x[2])
+
+print(combined_dag.match('bb'))
+print(combined_dag.match('aa'))
+print(combined_dag.match('bbaa')) # this should be false.
+print(combined_dag.match('aabb')) # this should be true.
+#combined_dag.match(start_b)
+#combined_dag.print_all_paths()

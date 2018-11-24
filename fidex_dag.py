@@ -59,14 +59,21 @@ class FIDEX_node(object):
             for w in edge.W_set:
                 edge.end.path_printer(current_path + [w])
 
+    def path_getter(self, current_path : List[tokens.FIDEX_token], gotten_paths : List[List[tokens.FIDEX_token]]):
+        if self.has_marking(FIDEX_marking.FINISH):
+            gotten_paths.append(current_path)
+        for edge in self.edges:
+            if len(edge.W_set) == 0:
+                edge.end.path_getter(current_path + ['EMPTY'], gotten_paths)
+            for w in edge.W_set:
+                edge.end.path_getter(current_path + [w], gotten_paths)
 
     def match(self, s : str) -> bool:
         if s == '' and self.has_marking(FIDEX_marking.FINISH):
             return True
         for edge in self.edges:
             for token in edge.W_set:
-                split = token.split_match(s)
-                print(split)
+                split = token.prefix_split_match(s)
                 if split is None:
                     continue
                 else:
@@ -115,6 +122,12 @@ class FIDEX_DAG(object):
         for node in self.start_nodes:
             node.path_printer([])
 
+    def get_all_paths(self):
+        all_paths = []
+        for node in self.start_nodes:
+            node.path_getter([], all_paths)
+        return all_paths
+
 
     # currently we make a copy from all the nodes that are in
     def copy(self, tolerate_incomplete_copy=False) -> 'FIDEX_DAG':
@@ -133,11 +146,15 @@ class FIDEX_DAG(object):
 def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
     orig_dag = orig_dag.copy()
     new_nodes = []
+    # since we can loop through the orig_node multiple times, we can double-remove its START marking.
+    #
     for orig_node in orig_dag.start_nodes:
         for minus_node in minus_dag.start_nodes:
             new_node = DAG_minus_from_node(orig_node, minus_node, new_nodes)
             new_node.add_marking(FIDEX_marking.START)
-            orig_node.remove_marking(FIDEX_marking.START)
+            if orig_node.has_marking(FIDEX_marking.START):
+                orig_node.remove_marking(FIDEX_marking.START)
+            orig_node = new_node
     new_all_nodes = orig_dag.all_nodes + new_nodes
     # we could do a copy with incomplete tolerance here to "clean" up any newly
     # unreachable parts of the DAG, but I don't think it hurts very much to keep them around.
@@ -155,17 +172,24 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
     if orig_node.has_marking(FIDEX_marking.FINISH) and not minus_node.has_marking(FIDEX_marking.FINISH):
         new_node.add_marking(FIDEX_marking.FINISH)
     for node_edge in orig_node.edges:
-        for minus_edge in minus_node.edges:
-            # TODO I think their alogrithm doesnt work if there are edges that have nothing in their Wset.
-            if len(minus_edge.W_set) == 0 or len(node_edge.W_set) == 0:
-                continue
+        if len(minus_node.edges) == 0:
+            minus_edges = [FIDEX_edge(node_edge.start, node_edge.end, W_set=set())]
+        else:
+            minus_edges = minus_node.edges
+
+        for minus_edge in minus_edges:
             non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
             minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
-            non_minus_edge = FIDEX_edge(new_node, node_edge.end, non_minus_condition)
-            minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end, new_nodes)
-            minus_edge = FIDEX_edge(new_node, minus_edge_node, minus_condition)
-            new_node.edges.append(non_minus_edge)
-            new_node.edges.append(minus_edge)
+            print(orig_node)
+            print('')
+            # TODO I think their alogrithm doesnt work if there are edges that have nothing in their Wset.
+            if len(non_minus_condition) > 0:
+                non_minus_edge = FIDEX_edge(new_node, node_edge.end, non_minus_condition)
+                new_node.edges.append(non_minus_edge)
+            if len(minus_condition) > 0:
+                minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end, new_nodes)
+                minus_edge = FIDEX_edge(new_node, minus_edge_node, minus_condition)
+                new_node.edges.append(minus_edge)
     return new_node
 
 def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,
@@ -183,11 +207,11 @@ def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,
     # build the edges of the new node
     for node1_edge in node1.edges:
         for node2_edge in node2.edges:
-            end_node = DAG_intersect_from_node(node1_edge.end, node2_edge.end, node_dict)
-            #print(node1_edge.W_set, node2_edge.W_set)
             new_W_set = (node1_edge.W_set.intersection(node2_edge.W_set)).copy()
-            new_edge = FIDEX_edge(new_node, end_node, new_W_set)
-            new_node.edges.append(new_edge)
+            if len(new_W_set) > 0:
+                end_node = DAG_intersect_from_node(node1_edge.end, node2_edge.end, node_dict)
+                new_edge = FIDEX_edge(new_node, end_node, new_W_set)
+                new_node.edges.append(new_edge)
     return new_node
 
 def DAG_intersect(dag1 : FIDEX_DAG, dag2 : FIDEX_DAG) -> FIDEX_DAG:

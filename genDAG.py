@@ -49,7 +49,18 @@ def genDAG_nodes(s : str) -> List[FIDEX_node]:
         for match in matches[(i,j)]:
             edge.W_set.add(match)
 
+    prune_nodes(nodes)
     return nodes
+
+def prune_nodes(nodes : List[FIDEX_node]):
+    for node in nodes:
+        new_edges = []
+        for edge in node.edges:
+            if len(edge.W_set) == 0:
+                continue
+            new_edges.append(edge)
+        node.edges = new_edges
+
 
 def mark_S1(nodes):
     nodes[0].add_marking(FIDEX_marking.START)
