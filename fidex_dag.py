@@ -178,8 +178,8 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
                         new_nodes : List[FIDEX_node]) -> FIDEX_node:
     # copy the original node and add it to the list of created nodes.
     new_node = FIDEX_node([])
-    #edges = [FIDEX_edge(new_node, edge.end, edge.W_set.copy()) for edge in orig_node.edges]
-    #new_node.edges = edges
+    edges = [FIDEX_edge(new_node, edge.end, edge.W_set.copy()) for edge in orig_node.edges]
+    new_node.edges = edges
     new_nodes.append(new_node)
 
     if orig_node.has_marking(FIDEX_marking.FINISH) and not minus_node.has_marking(FIDEX_marking.FINISH):
@@ -189,21 +189,21 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
     # copy the original node edges into the new node. For each minus edge, make a modification to these edges.
 
 
-    for node_edge in orig_node.edges:
-        for minus_edge in minus_node.edges:
+    for minus_edge in minus_node.edges:
+        for node_edge in new_node.edges[:]:
             non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
             minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
             print('non_minus', non_minus_condition)
             print('minus', minus_condition)
             print('')
-            # TODO I think their alogrithm doesnt work if there are edges that have nothing in their Wset.
-            if len(non_minus_condition) > 0:
-                non_minus_edge = FIDEX_edge(new_node, node_edge.end, non_minus_condition)
-                new_node.edges.append(non_minus_edge)
+            node_edge.W_set = non_minus_condition
             if len(minus_condition) > 0:
                 minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end, new_nodes)
                 minus_edge = FIDEX_edge(new_node, minus_edge_node, minus_condition)
                 new_node.edges.append(minus_edge)
+        # clean up edges that have no tokens.
+        new_node.edges = [edge for edge in new_node.edges
+                          if len(edge.W_set) > 0]
     return new_node
 
 def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,

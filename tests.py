@@ -8,7 +8,7 @@ from DAG2 import DAG2, minus
 
 
 #cat_dag = genDAG.generate_startswith('cat')
-end_a = genDAG.generate_endswith('aa')
+end_a = genDAG.generate_endswith('cat')
 #old_set = set([tuple(x) for x in end_a.get_all_paths()])
 
 #d2_end_a = DAG2().load_from_FIDEX_dag(end_a)
@@ -17,7 +17,7 @@ end_a = genDAG.generate_endswith('aa')
 #print('set equality', new_set == old_set)
 
 
-start_b = genDAG.generate_startswith('bb')
+start_b = genDAG.generate_startswith('dog')
 #d2_start_b = DAG2().load_from_FIDEX_dag(start_b)
 
 q = [fidex_dag.FIDEX_node([]) for _ in range(6)]
