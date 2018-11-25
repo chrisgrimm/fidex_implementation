@@ -4,11 +4,21 @@ import tokens
 import pandas as pd
 from termcolor import colored
 from typing import List, Callable
+from DAG2 import DAG2, minus
 
 
 #cat_dag = genDAG.generate_startswith('cat')
-end_a = genDAG.generate_endswith('cat')
-start_b = genDAG.generate_startswith('dogs')
+end_a = genDAG.generate_endswith('aa')
+#old_set = set([tuple(x) for x in end_a.get_all_paths()])
+
+#d2_end_a = DAG2().load_from_FIDEX_dag(end_a)
+#end_a2 = d2_end_a.convert_to_FIDEX_dag()
+#new_set = set([tuple(x) for x in end_a2.get_all_paths()])
+#print('set equality', new_set == old_set)
+
+
+start_b = genDAG.generate_startswith('bb')
+#d2_start_b = DAG2().load_from_FIDEX_dag(start_b)
 
 q = [fidex_dag.FIDEX_node([]) for _ in range(6)]
 # build D1
@@ -53,13 +63,23 @@ def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG], assertion_function : Ca
         all_inclusions.append(inclusions)
     for path, inclusions in zip(all_paths, all_inclusions):
         assertion_res = assertion_function(inclusions)
-        text = colored('SUCCESS', 'green') if assertion_res else colored('FAILURE', 'red')
+        if 'EMPTY' in path:
+            text = colored('EMPTY', 'yellow')
+        else:
+            text = colored('SUCCESS', 'green') if assertion_res else colored('FAILURE', 'red')
+
+
         print(path, inclusions, text)
 
 
 #combined_dag = fidex_dag.DAG_minus(cat_dag, dog_dag)
+#combined_dag = fidex_dag.DAG_intersect(start_b, end_a)
+#d2_combined = minus(d2_start_b, d2_end_a)
 combined_dag = fidex_dag.DAG_minus(start_b, end_a)
+#combined_dag = d2_combined.convert_to_FIDEX_dag()
+#combined_dag.print_all_paths()
 print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and (not x[1])) == x[2])
+#print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and x[1]) == x[2])
 
 print(combined_dag.match('bb'))
 print(combined_dag.match('aa'))

@@ -108,8 +108,8 @@ tokens += [GeneralToken('UPPERCASE', '[A-Z]'),
            GeneralToken('DIGIT', '\d')
           ]
            #GeneralToken('ALPHANUMERIC', '[a-zA-Z\d]')]
-#tokens += [SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
-#           SequenceToken('LOWERCASE_SEQ', '[a-z]'),
-#           SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
-#           SequenceToken('DIGIT_SEQ', '\d')
-#          ]
+tokens += [SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
+           SequenceToken('LOWERCASE_SEQ', '[a-z]'),
+           SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
+           SequenceToken('DIGIT_SEQ', '\d')
+          ]

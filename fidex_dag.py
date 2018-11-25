@@ -47,6 +47,12 @@ class FIDEX_node(object):
     def add_marking(self, marking):
         self.markings.add(marking)
 
+    def get_edge(self, start_id : int, end_id : int) -> Optional[FIDEX_edge]:
+        for edge in self.edges:
+            if edge.start.id == start_id and edge.end.id == end_id:
+                return edge
+        return None
+
     def remove_marking(self, marking):
         self.markings.remove(marking)
 
@@ -55,7 +61,8 @@ class FIDEX_node(object):
             print(current_path)
         for edge in self.edges:
             if len(edge.W_set) == 0:
-                edge.end.path_printer(current_path + ['EMPTY'])
+                return
+                #edge.end.path_printer(current_path + ['EMPTY'])
             for w in edge.W_set:
                 edge.end.path_printer(current_path + [w])
 
@@ -64,7 +71,8 @@ class FIDEX_node(object):
             gotten_paths.append(current_path)
         for edge in self.edges:
             if len(edge.W_set) == 0:
-                edge.end.path_getter(current_path + ['EMPTY'], gotten_paths)
+                return
+                #edge.end.path_getter(current_path + ['EMPTY'], gotten_paths)
             for w in edge.W_set:
                 edge.end.path_getter(current_path + [w], gotten_paths)
 
@@ -163,24 +171,30 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
     return new_dag
 
 
+
+
+
 def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
                         new_nodes : List[FIDEX_node]) -> FIDEX_node:
     # copy the original node and add it to the list of created nodes.
     new_node = FIDEX_node([])
+    #edges = [FIDEX_edge(new_node, edge.end, edge.W_set.copy()) for edge in orig_node.edges]
+    #new_node.edges = edges
     new_nodes.append(new_node)
 
     if orig_node.has_marking(FIDEX_marking.FINISH) and not minus_node.has_marking(FIDEX_marking.FINISH):
         new_node.add_marking(FIDEX_marking.FINISH)
-    for node_edge in orig_node.edges:
-        if len(minus_node.edges) == 0:
-            minus_edges = [FIDEX_edge(node_edge.start, node_edge.end, W_set=set())]
-        else:
-            minus_edges = minus_node.edges
 
-        for minus_edge in minus_edges:
+
+    # copy the original node edges into the new node. For each minus edge, make a modification to these edges.
+
+
+    for node_edge in orig_node.edges:
+        for minus_edge in minus_node.edges:
             non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
             minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
-            print(orig_node)
+            print('non_minus', non_minus_condition)
+            print('minus', minus_condition)
             print('')
             # TODO I think their alogrithm doesnt work if there are edges that have nothing in their Wset.
             if len(non_minus_condition) > 0:
