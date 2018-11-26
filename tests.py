@@ -8,7 +8,7 @@ from DAG2 import DAG2, minus
 
 
 #cat_dag = genDAG.generate_startswith('cat')
-end_a = genDAG.generate_endswith('cat')
+end_a = genDAG.generate_matches('cat')
 #old_set = set([tuple(x) for x in end_a.get_all_paths()])
 
 #d2_end_a = DAG2().load_from_FIDEX_dag(end_a)
