@@ -66,6 +66,16 @@ class FIDEX_node(object):
             for w in edge.W_set:
                 edge.end.path_printer(current_path + [w])
 
+    def edge_iterator(self):
+        for edge in self.edges:
+            yield edge
+            yield from edge.end.edge_iterator()
+
+    def node_iterator(self):
+        yield self
+        for edge in self.edges:
+            yield from edge.end.node_iterator()
+
     def path_getter(self, current_path : List[tokens.FIDEX_token], gotten_paths : List[List[tokens.FIDEX_token]]):
         if self.has_marking(FIDEX_marking.FINISH):
             gotten_paths.append(current_path)
@@ -130,6 +140,14 @@ class FIDEX_DAG(object):
         # TODO: need to check that this is a sufficient condition for emptiness.
         return len(self.start_nodes) == 0
 
+    def edge_iterator(self):
+        for node in self.start_nodes:
+            yield from node.edge_iterator()
+
+    def node_iterator(self):
+        for node in self.start_nodes:
+            yield from node.node_iterator()
+
     def print_all_paths(self):
         for node in self.start_nodes:
             node.path_printer([])
@@ -164,6 +182,8 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
             new_node.add_marking(FIDEX_marking.START)
             if orig_node.has_marking(FIDEX_marking.START):
                 orig_node.remove_marking(FIDEX_marking.START)
+            # TODO : it is questionable whether or not this line is necessary.
+            # it might result in a "cleaner" tree.
             orig_node = new_node
     new_all_nodes = orig_dag.all_nodes + new_nodes
     new_dag = FIDEX_DAG(new_all_nodes)

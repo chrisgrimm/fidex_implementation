@@ -81,9 +81,10 @@ combined_dag = fidex_dag.DAG_minus(start_b, end_a)
 print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and (not x[1])) == x[2])
 #print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and x[1]) == x[2])
 
-print(combined_dag.match('bb'))
-print(combined_dag.match('aa'))
-print(combined_dag.match('bbaa')) # this should be false.
-print(combined_dag.match('aabb')) # this should be true.
+print(start_b.match('catdog'))
+#print(combined_dag.match('bb'))
+#print(combined_dag.match('aa'))
+#print(combined_dag.match('bbaa')) # this should be false.
+#print(combined_dag.match('aabb')) # this should be true.
 #combined_dag.match(start_b)
 #combined_dag.print_all_paths()
