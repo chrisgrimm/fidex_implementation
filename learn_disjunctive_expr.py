@@ -87,6 +87,9 @@ def rank_DAG(D : FIDEX_DAG,
     next_node = dict()
     score_node = dict()
     for q in D.node_iterator():
+        if len(q.edges) == 0:
+            score_node[q] = 0
+            continue
         edge_pairs = [(e, score_edge[e]) for e in q.edges]
         max_edge[q], score_node[q] = max(edge_pairs, key=lambda x: x[1])
         next_node[q] = max_edge[q].end
@@ -101,7 +104,8 @@ def rank_DAG(D : FIDEX_DAG,
         path.append(q_c_prime)
         q_c = q_c_prime
 
-    ts = [max_edge[q] for q in path]
+    ts = [max_tok[max_edge[q]] for q in path if q in max_edge]
+
     return ts
 
 def match_sequence(s : str, sequence : List[FIDEX_token]) -> bool:

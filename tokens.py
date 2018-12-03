@@ -87,11 +87,15 @@ class SequenceToken(FIDEX_token):
 
 tokens : List[FIDEX_token] = []
 
-tokens += [ConstantToken(letter) for letter in 'abcdefghijklmnopqrstuvwxyz']
+rank0_tokens = []
+rank1_tokens = []
+rank2_tokens = []
+
+rank0_tokens += [ConstantToken(letter) for letter in 'abcdefghijklmnopqrstuvwxyz']
 letters = {letter : token for letter, token in zip('abcdefghijklmnopqrstuvwxyz',tokens)}
-tokens += [ConstantToken(letter) for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
-tokens += [ConstantToken(number) for number in '0123456789']
-tokens += [GeneralToken('-', '\-'),
+rank0_tokens += [ConstantToken(letter) for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
+rank0_tokens += [ConstantToken(number) for number in '0123456789']
+rank0_tokens += [GeneralToken('-', '\-'),
            GeneralToken('.', '\.'),
            GeneralToken(';', '\;'),
            GeneralToken(':', '\:'),
@@ -102,14 +106,31 @@ tokens += [GeneralToken('-', '\-'),
            GeneralToken('/', '\/'),
            GeneralToken('\\', '\\\\'),
            GeneralToken(' ', '\s')]
-tokens += [GeneralToken('UPPERCASE', '[A-Z]'),
+
+rank1_tokens += [GeneralToken('UPPERCASE', '[A-Z]'),
            GeneralToken('LOWERCASE', '[a-z]'),
            GeneralToken('ALPHA', '[A-Za-z]'),
            GeneralToken('DIGIT', '\d')
           ]
            #GeneralToken('ALPHANUMERIC', '[a-zA-Z\d]')]
-tokens += [SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
+rank2_tokens += [SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
            SequenceToken('LOWERCASE_SEQ', '[a-z]'),
            SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
            SequenceToken('DIGIT_SEQ', '\d')
           ]
+
+rank0_set = set(rank0_tokens)
+rank1_set = set(rank1_tokens)
+rank2_set = set(rank2_tokens)
+
+def generality_score(t : FIDEX_token) -> float:
+    if t in rank0_set:
+        return 0
+    elif t in rank1_set:
+        return 1
+    elif t in rank2_set:
+        return 2
+    else:
+        raise Exception(f'unranked token {t}')
+
+tokens = rank0_tokens + rank1_tokens + rank2_tokens

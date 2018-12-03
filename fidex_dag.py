@@ -25,6 +25,7 @@ class FIDEX_edge(object):
         self.W_set = W_set
         self.start = start
         self.end = end
+        self.leads_no_where = False
 
 
 
@@ -160,7 +161,7 @@ class FIDEX_DAG(object):
 
 
     # currently we make a copy from all the nodes that are in
-    def copy(self, tolerate_incomplete_copy=False) -> 'FIDEX_DAG':
+    def copy(self, tolerate_incomplete_copy=True) -> 'FIDEX_DAG':
         node_lookup = dict()
         [start_node.copy(node_lookup) for start_node in self.start_nodes]
         if not tolerate_incomplete_copy:
@@ -171,6 +172,57 @@ class FIDEX_DAG(object):
                          if node.id in node_lookup]
         new_dag = FIDEX_DAG(new_all_nodes)
         return new_dag
+
+
+# remove nodes that dont lead anywhere
+def DAG_leads_to_finish(edge : FIDEX_edge):
+    if edge.end.has_marking(FIDEX_marking.FINISH):
+        return True
+    else:
+        leads_to_finish = False
+        for next_edge in edge.end.edges:
+            other_edge = DAG_leads_to_finish(next_edge)
+            leads_to_finish = leads_to_finish or other_edge
+        if not leads_to_finish:
+            edge.leads_no_where = True
+            return False
+        else:
+            return True
+
+def DAG_prune_node(node : FIDEX_node):
+    node.edges = [edge for edge in node.edges if not edge.leads_no_where]
+
+    for edge in node.edges:
+        DAG_prune_node(edge.end)
+
+def DAG_collect_reachable_nodes(node : FIDEX_node, collection : Set[FIDEX_node]):
+    collection.add(node)
+    for edge in node.edges:
+        DAG_collect_reachable_nodes(edge.end, collection)
+
+def DAG_prune(dag : FIDEX_DAG):
+    dag = dag.copy()
+    # mark the edges to be deleted.
+    for node in dag.start_nodes:
+        for edge in node.edges:
+            DAG_leads_to_finish(edge)
+    # remove marked edges.
+    for node in dag.start_nodes:
+        DAG_prune_node(node)
+
+    reachable_set = set()
+    for node in dag.start_nodes:
+        if len(node.edges) == 0:
+            continue
+        DAG_collect_reachable_nodes(node, reachable_set)
+
+    dag.all_nodes = list(reachable_set)
+    dag.start_nodes = [node for node in dag.all_nodes if node.has_marking(FIDEX_marking.START)]
+    return dag
+
+
+
+
 
 
 def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
@@ -187,7 +239,9 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
             orig_node = new_node
     new_all_nodes = orig_dag.all_nodes + new_nodes
     new_dag = FIDEX_DAG(new_all_nodes)
+    new_dag = DAG_prune(new_dag)
     return new_dag
+
 
 
 def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
@@ -243,4 +297,6 @@ def DAG_intersect(dag1 : FIDEX_DAG, dag2 : FIDEX_DAG) -> FIDEX_DAG:
         for node2 in dag2.all_nodes:
             DAG_intersect_from_node(node1, node2, node_dict)
     all_nodes = list(node_dict.values())
-    return FIDEX_DAG(all_nodes)
+    dag = FIDEX_DAG(all_nodes)
+    dag = DAG_prune(dag)
+    return dag
