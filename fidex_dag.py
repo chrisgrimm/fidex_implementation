@@ -160,13 +160,22 @@ class FIDEX_DAG(object):
     # currently we make a copy from all the nodes that are in
     def copy(self, tolerate_incomplete_copy=True) -> 'FIDEX_DAG':
         node_lookup = dict()
-        [start_node.copy(node_lookup) for start_node in self.start_nodes]
+        nodes_to_copy = set([node.id for node in self.start_nodes])
+        mapping = {node.id : node for node in self.start_nodes}
+        while len(nodes_to_copy) > 0:
+            node_id = next(iter(nodes_to_copy))
+            node = mapping[node_id]
+            node.copy(node_lookup)
+            copied_so_far = set(node_lookup.keys())
+            nodes_to_copy = nodes_to_copy.difference(copied_so_far)
+
+        #[start_node.copy(node_lookup) for start_node in self.start_nodes]
         if not tolerate_incomplete_copy:
             for node in self.all_nodes:
                 if node.id not in node_lookup:
                     raise Exception(f'Unreachable node.')
-        new_all_nodes = [node_lookup[node.id] for node in self.all_nodes
-                         if node.id in node_lookup]
+        new_all_nodes = [node_lookup[n_node.id] for n_node in self.all_nodes
+                         if n_node.id in node_lookup]
         new_dag = FIDEX_DAG(new_all_nodes)
         return new_dag
 
