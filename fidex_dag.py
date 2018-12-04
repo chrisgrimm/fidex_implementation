@@ -48,11 +48,6 @@ class FIDEX_node(object):
     def add_marking(self, marking):
         self.markings.add(marking)
 
-    def get_edge(self, start_id : int, end_id : int) -> Optional[FIDEX_edge]:
-        for edge in self.edges:
-            if edge.start.id == start_id and edge.end.id == end_id:
-                return edge
-        return None
 
     def remove_marking(self, marking):
         self.markings.remove(marking)
@@ -71,6 +66,8 @@ class FIDEX_node(object):
         for edge in self.edges:
             yield edge
             yield from edge.end.edge_iterator()
+
+
 
     def node_iterator(self):
         yield self
@@ -256,17 +253,17 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
         new_node.add_marking(FIDEX_marking.FINISH)
 
     for minus_edge in minus_node.edges:
+        # TODO why do I copy here?
         for node_edge in new_node.edges[:]:
             non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
             minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
             node_edge.W_set = non_minus_condition
             if len(minus_condition) > 0:
                 minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end, new_nodes)
-                minus_edge = FIDEX_edge(new_node, minus_edge_node, minus_condition)
-                new_node.edges.append(minus_edge)
+                new_minus_edge = FIDEX_edge(new_node, minus_edge_node, minus_condition)
+                new_node.edges.append(new_minus_edge)
         # clean up edges that have no tokens.
-        new_node.edges = [edge for edge in new_node.edges
-                          if len(edge.W_set) > 0]
+        new_node.edges = [edge for edge in new_node.edges if len(edge.W_set) > 0]
     return new_node
 
 def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,

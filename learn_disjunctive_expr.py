@@ -4,6 +4,7 @@ from genDAG import generate_startswith, generate_endswith, generate_contains, ge
 
 from typing import List, Callable, Tuple, Optional
 
+
 def learn_token_seq(s_plus : List[str],
                     s_minus : List[str],
                     pred : Callable[[str], FIDEX_DAG]) -> FIDEX_DAG:
@@ -21,17 +22,15 @@ def merge_DAGs(D_tilde):
     D_tilde_res = []
     D_tilde_res.append(D_tilde[0])
     for D in D_tilde:
-        nonempty_intersection = None
+        found_j = False
         for j in range(len(D_tilde_res)):
             Dj = D_tilde_res[j]
             intersection = DAG_intersect(Dj, D)
             if not intersection.is_empty():
-                nonempty_intersection = (j, intersection)
+                D_tilde_res[j] = intersection
+                found_j = True
                 break
-        if nonempty_intersection is not None:
-            (j, intersection) = nonempty_intersection
-            D_tilde_res[j] = intersection
-        else:
+        if not found_j:
             D_tilde_res.append(D)
     return D_tilde_res
 
@@ -95,6 +94,9 @@ def rank_DAG(D : FIDEX_DAG,
         next_node[q] = max_edge[q].end
 
     start_pairs = [(s, score_node[s]) for s in D.start_nodes]
+    # there being no start pairs is an indication that the DAG is empty.
+    if len(start_pairs) == 0:
+        return []
     q_c, avg_score = max(start_pairs, key=lambda x: x[1])
     q_c_prime = q_c
     path = [q_c]
@@ -108,6 +110,7 @@ def rank_DAG(D : FIDEX_DAG,
 
     return ts
 
+
 def match_sequence(s : str, sequence : List[FIDEX_token]) -> bool:
     # TODO should I return False for empty sequences?
     if len(sequence) == 0:
@@ -119,6 +122,7 @@ def match_sequence(s : str, sequence : List[FIDEX_token]) -> bool:
         (_, s) = match
     return True
 
+
 class Disjunction(object):
 
     def __init__(self, sequences : List[List[FIDEX_token]]):
@@ -126,6 +130,7 @@ class Disjunction(object):
 
     def match(self, s : str):
         return any(match_sequence(s, seq) for seq in self.sequences)
+
 
 def rank_DAGs(D_tilde : List[FIDEX_DAG],
               score : Callable[[FIDEX_token], float]) -> Disjunction:
@@ -135,11 +140,29 @@ def rank_DAGs(D_tilde : List[FIDEX_DAG],
         seq_list.append(seq)
     return Disjunction(seq_list)
 
+
+def learn_filter_no_disjunction(S_plus : List[str],
+                                S_minus : List[str],
+                                score : Callable[[FIDEX_token], float],
+                                pred_list : List[Callable[[str], FIDEX_DAG]]) -> Optional[Disjunction]:
+    #pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
+    all_token_sequences = []
+    for pred in pred_list:
+        D = learn_token_seq(S_plus, S_minus, pred)
+        token_seq = rank_DAG(D, score)
+        all_token_sequences.append(token_seq)
+    return Disjunction(all_token_sequences)
+
+
+
+
 def learn_filter(S_plus : List[str],
                  S_minus : List[str],
-                 score : Callable[[FIDEX_token], float]) -> Optional[Disjunction]:
-    pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
+                 score : Callable[[FIDEX_token], float],
+                 pred_list : List[Callable[[str], FIDEX_DAG]]) -> Optional[Disjunction]:
+    #pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
     for pred in pred_list:
+        print('Adding:', S_plus[0], True)
         D_tilde, D_tilde_minus = learn_disj_exprs_inc([], [], S_plus[0], True, pred)
         if len(D_tilde) == 0:
             continue
@@ -147,19 +170,29 @@ def learn_filter(S_plus : List[str],
 
         false_negatives = [s for s in S_plus if not r.match(s)]
         false_positives = [s for s in S_minus if r.match(s)]
+        print(f'fn: {false_negatives}, fp: {false_positives}')
         while len(false_negatives) > 0 or len(false_positives) > 0:
+            #print('false_negatives', false_negatives)
+            #print('false_positives', false_positives)
             if len(false_negatives) > 0:
                 s = false_negatives[0]
                 is_pos = True
             else:
                 s = false_positives[0]
                 is_pos = False
+            print('Adding:', s, is_pos)
+            # TODO how can it be that negative examples dont change the false positive / negative splits sometimes but not othertimes.
+            # TODO whats happening is this: A positive expression is being added, but its not successfully removing the false negative term. This results in the algorithm continually adding the same DAG.
+            # weirdly, sometimes this seesm to change the tree and other times it doesnt. This means there is a source of noise in our code, maybe a set iteration or something that isnt deterministic.
+            # this still seems like a bug if its possible to get different inclusions from randomness.
+
             D_tilde, D_tilde_minus = learn_disj_exprs_inc(D_tilde, D_tilde_minus, s, is_pos, pred)
             if len(D_tilde) == 0:
                 break
             r = rank_DAGs(merge_DAGs(D_tilde), score)
             false_negatives = [s for s in S_plus if not r.match(s)]
             false_positives = [s for s in S_minus if r.match(s)]
+            print(f'fn: {false_negatives}, fp: {false_positives}')
 
         if len(D_tilde) != 0:
             return r

@@ -4,7 +4,8 @@ import tokens
 import pandas as pd
 from termcolor import colored
 from typing import List, Callable
-from DAG2 import DAG2, minus
+from genDAG import generate_startswith, generate_endswith
+from fidex_dag import DAG_minus
 
 
 #cat_dag = genDAG.generate_startswith('cat')
@@ -46,7 +47,9 @@ D2 = fidex_dag.FIDEX_DAG([q[3], q[4], q[5]])
 #combined_dag = fidex_dag.DAG_minus(D1, D2)
 #combined_dag.print_all_paths()
 
-def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG], assertion_function : Callable[[List[bool]], bool]):
+def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG],
+                       assertion_function : Callable[[List[bool]], bool],
+                       only_failures : bool = False):
     all_paths = []
     for dag in dags:
         all_paths.extend([tuple(x) for x in dag.get_all_paths()])
@@ -68,17 +71,27 @@ def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG], assertion_function : Ca
         else:
             text = colored('SUCCESS', 'green') if assertion_res else colored('FAILURE', 'red')
 
-
+        if only_failures and assertion_res and (not 'EMPTY' in path):
+            continue
         print(path, inclusions, text)
 
 
 #combined_dag = fidex_dag.DAG_minus(cat_dag, dog_dag)
 #combined_dag = fidex_dag.DAG_intersect(start_b, end_a)
 #d2_combined = minus(d2_start_b, d2_end_a)
-combined_dag = fidex_dag.DAG_minus(start_b, end_a)
+x = generate_endswith('aa')
+y = generate_endswith('b')
+
+z = DAG_minus(x, y)
+
+print(x.match('dogcat'), x.match('asdf'))
+print(y.match('dogcat'), y.match('asdf'))
+print(z.match('dogcat'), z.match('asdf'))
+
+#combined_dag = fidex_dag.DAG_minus(start_b, end_a)
 #combined_dag = d2_combined.convert_to_FIDEX_dag()
 #combined_dag.print_all_paths()
-print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and (not x[1])) == x[2])
+print_path_diagram([x, y, z], lambda x: (x[0] and (not x[1])) == x[2], only_failures=True)
 #print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and x[1]) == x[2])
 
 print(start_b.match('catdog'))
