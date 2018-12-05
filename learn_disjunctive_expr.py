@@ -181,10 +181,11 @@ def learn_filter_no_disjunction(S_plus : List[str],
     all_token_sequences = []
     for pred_gen, pred_match in pred_bindings:
         D = learn_token_seq(S_plus, S_minus, pred_gen)
+        if D.is_empty():
+            continue
         token_seq = rank_DAG(D, score)
-        all_token_sequences.append(token_seq)
-
-    return Disjunction(all_token_sequences, pred_match)
+        return Disjunction([token_seq], pred_match)
+    return None
 
 
 

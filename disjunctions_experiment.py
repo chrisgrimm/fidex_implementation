@@ -38,7 +38,7 @@ def learn_instance(instance : Tuple[List[str], List[str]],
             else:
                 break
         else:
-            raise Exception("AHHH")
+            return None
 
     end = time.time()
 

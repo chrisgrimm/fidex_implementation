@@ -8,8 +8,8 @@ from fidex_dag import DAG_minus, DAG_intersect
 #word_bank = ['CatDogCat', 'CaDogCat', 'ArgleDogBarg', '12432', '1023432', 'BirdCart',
 #             'DogDog', 'BirdCat', 'Dog', 'Doggy', 'CatCat', '1234', 'Dogo', 'Cat' ,'CatCatCatCatCat', 'CatCatCatCatCatCat', 'DogDogDog']
 
-positive_words = ['cat1', 'cat2', 'cat3']
-negative_words = ['dog1', 'dog2', 'dog3']
+positive_words = ['cat1', 'cat2', 'cat3', 'cat4']
+negative_words = ['dog1', 'dog2', 'dog3', 'dog4']
 
 #positive_words = ['123cats456', 'cats', 'asdcats12312']
 #negative_words = ['asdfsdf', 'sdfgsd', '112asdf', '123sdf32fsd']
@@ -25,6 +25,7 @@ print(y.match('dogcat'), y.match('asdf'))
 print(z.match('dogcat'), z.match('asdf'))
 
 word_bank = positive_words + negative_words
+print(word_bank)
 
 S_plus = ['cat1']
 S_minus = ['dog1']

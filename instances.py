@@ -10,5 +10,14 @@ instances = [
 
     (['dogcat', 'catcat', '1234cat'],
      ['001234', 'asdf', 'asdfsdf', 'asdf2fe', 'asdfasdf']), # endswith cat
+
+    (['cat1', 'cat2', 'cat3', 'cat4'],
+     ['dog1', 'dog2', 'dog3', 'dog4']), # cats not dogs
+
+    (['Robert M. Smith', 'John E. Doe', 'James F. Franco', 'Wesley W. Weimer'],
+     ['John Stuart', 'Jimmy Mcgill', 'Johnny Walker', 'Jeffrey Dahmer']), # middle names
+
+    #([])
+
 ]
 
