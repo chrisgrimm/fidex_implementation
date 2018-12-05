@@ -1,5 +1,6 @@
 from typing import List
 import tokens
+from tokens import FIDEX_token
 from fidex_dag import FIDEX_node, FIDEX_edge, FIDEX_marking, FIDEX_DAG
 
 

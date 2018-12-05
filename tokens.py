@@ -115,37 +115,40 @@ rank1_tokens += [GeneralToken('UPPERCASE', '[A-Z]'),
            GeneralToken('ALPHA', '[A-Za-z]'),
            GeneralToken('DIGIT', '\d')]
 
-#rank2_tokens += [GeneralToken('ALPHANUMERIC', '[a-zA-Z\d]')]
+LOWERCASE = rank1_tokens[1]
+
+
+rank2_tokens += [GeneralToken('ALPHANUMERIC', '[a-zA-Z\d]')]
 
 rank3_tokens += [SequenceToken('UPPERCASE_SEQ', '[A-Z]'),
-           SequenceToken('LOWERCASE_SEQ', '[a-z]'),
-           SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
-           SequenceToken('DIGIT_SEQ', '\d')
-          ]
+          SequenceToken('LOWERCASE_SEQ', '[a-z]'),
+          SequenceToken('ALPHA_SEQ', '[A-Za-z]'),
+          SequenceToken('DIGIT_SEQ', '\d')
+         ]
 
-#rank4_tokens += [SequenceToken('ALPHANUMERIC_SEQ', '[a-zA-Z\d]')]
+rank4_tokens += [SequenceToken('ALPHANUMERIC_SEQ', '[a-zA-Z\d]')]
 
 
 rank0_set = set(rank0_tokens)
 rank1_set = set(rank1_tokens)
-#rank2_set = set(rank2_tokens)
+rank2_set = set(rank2_tokens)
 rank3_set = set(rank3_tokens)
-#rank4_set = set(rank4_tokens)
+rank4_set = set(rank4_tokens)
 
 def generality_score(t : FIDEX_token) -> float:
     if t in rank0_set:
         return 1
     elif t in rank1_set:
         return 2
-    #elif t in rank2_set:
-    #    return 3
+    elif t in rank2_set:
+        return 3
     elif t in rank3_set:
         return 4
-    #elif t in rank4_set:
-    #    return 5
+    elif t in rank4_set:
+        return 5
     else:
         raise Exception(f'unranked token {t}')
 
-tokens = rank0_tokens + rank1_tokens + rank3_tokens
+tokens = rank0_tokens + rank1_tokens + rank3_tokens + rank2_tokens + rank4_tokens
 
 print(len(tokens))

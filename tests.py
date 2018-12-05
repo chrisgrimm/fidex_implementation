@@ -4,8 +4,8 @@ import tokens
 import pandas as pd
 from termcolor import colored
 from typing import List, Callable
-from genDAG import generate_startswith, generate_endswith
-from fidex_dag import DAG_minus
+from genDAG import generate_startswith, generate_endswith, generate_contains
+from fidex_dag import DAG_minus, DAG_intersect
 
 
 #cat_dag = genDAG.generate_startswith('cat')
@@ -79,20 +79,18 @@ def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG],
 #combined_dag = fidex_dag.DAG_minus(cat_dag, dog_dag)
 #combined_dag = fidex_dag.DAG_intersect(start_b, end_a)
 #d2_combined = minus(d2_start_b, d2_end_a)
-x = generate_endswith('aa')
-y = generate_endswith('b')
+x = generate_contains('cats')
+y = generate_contains('asdfsdf')
 
 z = DAG_minus(x, y)
 
-print(x.match('dogcat'), x.match('asdf'))
-print(y.match('dogcat'), y.match('asdf'))
-print(z.match('dogcat'), z.match('asdf'))
+print(z.match('cats'), z.match('asdfsdf'))
 
 #combined_dag = fidex_dag.DAG_minus(start_b, end_a)
 #combined_dag = d2_combined.convert_to_FIDEX_dag()
 #combined_dag.print_all_paths()
 print_path_diagram([x, y, z], lambda x: (x[0] and (not x[1])) == x[2], only_failures=True)
-#print_path_diagram([start_b, end_a, combined_dag], lambda x: (x[0] and x[1]) == x[2])
+#print_path_diagram([x, y, z], lambda x: (x[0] and x[1]) == x[2], only_failures=True)
 
 print(start_b.match('catdog'))
 #print(combined_dag.match('bb'))
@@ -101,3 +99,5 @@ print(start_b.match('catdog'))
 #print(combined_dag.match('aabb')) # this should be true.
 #combined_dag.match(start_b)
 #combined_dag.print_all_paths()
+
+
