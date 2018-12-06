@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, List, Optional
+#from typing import Callable, Tuple, List, Optional
 from learn_disjunctive_expr import Disjunction, learn_filter, learn_filter_no_disjunction, pred_bindings
 from genDAG import generate_startswith, generate_endswith, generate_matches, generate_contains
 from tokens import generality_score, FIDEX_token
@@ -12,9 +12,7 @@ import time
 import os
 
 
-def learn_instance(instance : Instance,
-                   learn_filter_func,
-                   pred_bindings):
+def learn_instance(instance, learn_filter_func, pred_bindings):
 
     start = time.time()
 
@@ -53,10 +51,7 @@ def learn_instance(instance : Instance,
     return result
 
 
-def learn_instance_timeout(instance : Instance,
-                           learn_filter_func,
-                           pred_bindings,
-                           seconds : int):
+def learn_instance_timeout(instance, learn_filter_func, pred_bindings, seconds):
     process = Process(target=learn_instance, args=(instance, learn_filter_func, pred_bindings))
     with open('result.txt', 'wb') as f:
         pickle.dump(None, f)
@@ -68,7 +63,7 @@ def learn_instance_timeout(instance : Instance,
     return result
 
 
-def get_data(instances : List[Instance]):
+def get_data(instances):
     timeout = 10
     pred_sets = [('StartsWith', [pred_bindings['StartsWith']]),
                  ('EndsWith', [pred_bindings['EndsWith']]),
@@ -93,10 +88,10 @@ def get_data(instances : List[Instance]):
     for (filter_func_name, learn_filter_func) in learn_filter_funcs:
         for (pred_set_name, pred_set) in pred_sets:
             for i, instance in enumerate(instances):
-                print(f'{filter_func_name}/{pred_set_name}/{i}')
+                print('%s/%s/%s' % (filter_func_name, pred_set_name, i))
                 result = learn_instance_timeout(instance, learn_filter_func, pred_set, timeout)
                 #result = learn_instance(instance, learn_filter_func, pred_set)
-                print(f'\t{result}')
+                print('\t%s' % result)
                 data[filter_func_name][pred_set_name].append(result)
     with open(os.path.join('experiment_data', 'perf_data.pickle'), 'wb') as f:
         pickle.dump(data, f)

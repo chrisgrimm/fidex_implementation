@@ -2,12 +2,9 @@ from fidex_dag import FIDEX_DAG, DAG_intersect, DAG_minus, FIDEX_marking, DAG_pr
 from tokens import FIDEX_token
 from genDAG import generate_startswith, generate_endswith, generate_contains, generate_matches
 from random import shuffle
-from typing import List, Callable, Tuple, Optional
 
 
-def learn_token_seq(s_plus : List[str],
-                    s_minus : List[str],
-                    pred : Callable[[str], FIDEX_DAG]) -> FIDEX_DAG:
+def learn_token_seq(s_plus, s_minus, pred):
     D = pred(s_plus[0])
     for s in s_plus[1:]:
         D_plus = pred(s)
@@ -34,9 +31,7 @@ def merge_DAGs(D_tilde):
     return D_tilde_res
 
 
-def learn_disj_exprs(s_plus : List[str],
-                     s_minus : List[str],
-                     pred : Callable[[str], FIDEX_DAG]) -> List[FIDEX_DAG]:
+def learn_disj_exprs(s_plus, s_minus, pred):
     D_tilde = []
     for s in s_plus:
         D_plus = pred(s)
@@ -50,12 +45,7 @@ def learn_disj_exprs(s_plus : List[str],
     return merge_DAGs(D_tilde)
 
 
-# TODO finish this part of the implementation
-def learn_disj_exprs_inc(D_tilde : List[FIDEX_DAG],
-                         D_tilde_minus : List[FIDEX_DAG],
-                         s : str,
-                         is_pos_str: bool,
-                         pred : Callable[[str], FIDEX_DAG]) -> Tuple[List[FIDEX_DAG], List[FIDEX_DAG]]:
+def learn_disj_exprs_inc(D_tilde, D_tilde_minus, s, is_pos_str, pred):
     D = pred(s)
     if is_pos_str:
         for D_minus in D_tilde_minus:
@@ -74,8 +64,7 @@ def learn_disj_exprs_inc(D_tilde : List[FIDEX_DAG],
 
 
 # returns the top ranked token sequence
-def rank_DAG(D : FIDEX_DAG,
-             score : Callable[[FIDEX_token], float]) -> List[FIDEX_token]:
+def rank_DAG(D, score):
     max_tok = dict()
     score_edge = dict()
     for e in D.edge_iterator():
@@ -110,7 +99,7 @@ def rank_DAG(D : FIDEX_DAG,
 
     return ts
 
-def match_helper(s : str, sequence : List[FIDEX_token], require_empty : bool) -> bool:
+def match_helper(s, sequence, require_empty):
     # TODO should I return False for empty sequences?
     if len(sequence) == 0:
         return s == ''
@@ -124,17 +113,17 @@ def match_helper(s : str, sequence : List[FIDEX_token], require_empty : bool) ->
     else:
         return True
 
-def match_sequence_startswith(s : str, sequence : List[FIDEX_token]) -> bool:
+def match_sequence_startswith(s, sequence):
     return match_helper(s, sequence, False)
 
-def match_sequence_endswith(s : str, sequence : List[FIDEX_token]) -> bool:
+def match_sequence_endswith(s, sequence):
     for i in range(len(s)):
         match = match_helper(s[i:], sequence, True)
         if match:
             return True
     return False
 
-def match_sequence_contains(s : str, sequence : List[FIDEX_token]) -> bool:
+def match_sequence_contains(s, sequence):
     for i in range(len(s)):
         for j in range(i+1, len(s)+1):
             #print('testing', s[i:j])
@@ -143,7 +132,7 @@ def match_sequence_contains(s : str, sequence : List[FIDEX_token]) -> bool:
                 return True
     return False
 
-def match_sequence_matches(s : str, sequence : List[FIDEX_token]) -> bool:
+def match_sequence_matches(s, sequence):
     return match_helper(s, sequence, True)
 
 
@@ -151,17 +140,15 @@ def match_sequence_matches(s : str, sequence : List[FIDEX_token]) -> bool:
 
 class Disjunction(object):
 
-    def __init__(self, sequences : List[List[FIDEX_token]], match_func : Callable[[str, List[FIDEX_token]], bool]):
+    def __init__(self, sequences, match_func):
         self.sequences = sequences
         self.match_func = match_func
 
-    def match(self, s : str):
+    def match(self, s):
         return any(self.match_func(s, seq) for seq in self.sequences)
 
 
-def rank_DAGs(D_tilde : List[FIDEX_DAG],
-              score : Callable[[FIDEX_token], float],
-              match_func : Callable[[str, List[FIDEX_token]], bool]) -> Disjunction:
+def rank_DAGs(D_tilde, score, match_func):
     seq_list = []
     for D in D_tilde:
         seq = rank_DAG(D, score)
@@ -169,10 +156,7 @@ def rank_DAGs(D_tilde : List[FIDEX_DAG],
     return Disjunction(seq_list, match_func)
 
 
-def learn_filter_no_disjunction(S_plus : List[str],
-                                S_minus : List[str],
-                                score : Callable[[FIDEX_token], float],
-                                pred_bindings) -> Optional[Tuple[str, Disjunction]]:
+def learn_filter_no_disjunction(S_plus, S_minus, score, pred_bindings):
     #pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
     all_token_sequences = []
     for pred_name, pred_gen, pred_match in pred_bindings:
@@ -185,10 +169,7 @@ def learn_filter_no_disjunction(S_plus : List[str],
 
 
 
-def learn_filter(S_plus : List[str],
-                 S_minus : List[str],
-                 score : Callable[[FIDEX_token], float],
-                 pred_bindings) -> Optional[Tuple[str, Disjunction]]:
+def learn_filter(S_plus, S_minus, score, pred_bindings):
     #pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
     for (pred_name, pred_gen, pred_match) in pred_bindings:
         D_tilde, D_tilde_minus = learn_disj_exprs_inc([], [], S_plus[0], True, pred_gen)

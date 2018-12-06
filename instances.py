@@ -1,19 +1,21 @@
 import os, re
-from typing import List
 
 class Instance(object):
 
-    def __init__(self, all_words : List[str], regex : str):
+    def __init__(self, all_words, regex):
         self.all_words = all_words
         self.regex = regex
         self.positive_words = [word for word in all_words if re.match(regex, word)]
         self.negative_words = [word for word in all_words if not re.match(regex, word)]
 
     def __repr__(self):
-        return f'Instance({self.regex}, [{",".join(self.positive_words[:3])}, ...],  [{",".join(self.negative_words[:3])}, ...])'
+        pre_format = f'Instance(%s, [%s, ...],  [%s, ...])'
+        return pre_format % (self.regex, ",".join(self.positive_words[:3]), ",".join(self.negative_words[:3]))
+                                                                                                                                     )
 
     def __str_(self):
-        return f'Instance({self.regex}, [{",".join(self.positive_words[:3])}, ...],  [{",".join(self.negative_words[:3])}, ...])'
+        pre_format = f'Instance(%s, [%s, ...],  [%s, ...])'
+        return pre_format % (self.regex, ",".join(self.positive_words[:3]), ",".join(self.negative_words[:3]))
 
 
 instances = [

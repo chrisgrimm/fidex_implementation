@@ -1,10 +1,10 @@
 import numpy as np
 import re
 import tokens
-from enum import Enum
-from typing import Set, List, Tuple, Optional, Dict
+#from enum import Enum
+#from typing import Set, List, Tuple, Optional, Dict
 
-class FIDEX_marking(Enum):
+class FIDEX_marking(object):
     START = 1
     FINISH = 2
     NORMAL = 3
@@ -21,19 +21,19 @@ id_generator = make_generator()
 
 class FIDEX_edge(object):
 
-    def __init__(self, start : 'FIDEX_node', end : 'FIDEX_node', W_set : Set[tokens.FIDEX_token]):
+    def __init__(self, start, end, W_set):
         self.W_set = W_set
         self.start = start
         self.end = end
         self.leads_no_where = False
 
     def __str__(self):
-        return f'Edge({self.start}, {self.end}, {self.W_set})'
+        return 'Edge(%s, %s, %s)' % (self.start, self.end. self.W_set)
 
 
 class FIDEX_node(object):
 
-    def __init__(self, edges : List[FIDEX_edge], id=None):
+    def __init__(self, edges, id=None):
         if id is None:
             self.id = next(id_generator)
         else:
@@ -50,7 +50,7 @@ class FIDEX_node(object):
     def remove_marking(self, marking):
         self.markings.remove(marking)
 
-    def path_printer(self, current_path : List[tokens.FIDEX_token]):
+    def path_printer(self, current_path):
         if self.has_marking(FIDEX_marking.FINISH):
             print(current_path)
         for edge in self.edges:
@@ -63,14 +63,18 @@ class FIDEX_node(object):
     def edge_iterator(self):
         for edge in self.edges:
             yield edge
-            yield from edge.end.edge_iterator()
+            for e in edge.end.edge_iterator():
+                yield e
+            #yield from edge.end.edge_iterator()
 
     def node_iterator(self):
         yield self
         for edge in self.edges:
-            yield from edge.end.node_iterator()
+            for n in edge.end.node_iterator():
+                yield n
+            #yield from edge.end.node_iterator()
 
-    def path_getter(self, current_path : List[tokens.FIDEX_token], gotten_paths : List[List[tokens.FIDEX_token]]):
+    def path_getter(self, current_path, gotten_paths):
         if self.has_marking(FIDEX_marking.FINISH):
             gotten_paths.append(current_path)
         for edge in self.edges:
@@ -80,7 +84,7 @@ class FIDEX_node(object):
             for w in edge.W_set:
                 edge.end.path_getter(current_path + [w], gotten_paths)
 
-    def match(self, s : str) -> bool:
+    def match(self, s):
         if s == '' and self.has_marking(FIDEX_marking.FINISH):
             return True
         for edge in self.edges:
@@ -100,9 +104,9 @@ class FIDEX_node(object):
 
 
     def __str__(self):
-        return f'Node({self.id})'
+        return 'Node(%s)' % (self.id)
 
-    def copy(self, node_lookup : Dict[int, 'FIDEX_node']):
+    def copy(self, node_lookup):
         copy_node = FIDEX_node([], id=self.id)
         node_lookup[self.id] = copy_node
         for marking in self.markings:
@@ -120,13 +124,13 @@ class FIDEX_node(object):
 
 class FIDEX_DAG(object):
 
-    def __init__(self, all_nodes : List[FIDEX_node]):
+    def __init__(self, all_nodes):
         self.all_nodes = all_nodes
         self.start_nodes = [node for node in all_nodes
                             if node.has_marking(FIDEX_marking.START)]
 
     # TODO this function probably shouldnt exist.
-    def match(self, s : str) -> bool:
+    def match(self, s):
         for node in self.start_nodes:
             if node.match(s):
                 return True
@@ -138,11 +142,15 @@ class FIDEX_DAG(object):
 
     def edge_iterator(self):
         for node in self.start_nodes:
-            yield from node.edge_iterator()
+            for e in node.edge_iterator():
+                yield e
+            #yield from node.edge_iterator()
 
     def node_iterator(self):
         for node in self.start_nodes:
-            yield from node.node_iterator()
+            for n in node.node_iterator():
+                yield n
+            #yield from node.node_iterator()
 
     def print_all_paths(self):
         for node in self.start_nodes:
@@ -156,7 +164,7 @@ class FIDEX_DAG(object):
 
 
     # currently we make a copy from all the nodes that are in
-    def copy(self, tolerate_incomplete_copy=True) -> 'FIDEX_DAG':
+    def copy(self, tolerate_incomplete_copy=True):
         node_lookup = dict()
         nodes_to_copy = set([node.id for node in self.start_nodes])
         mapping = {node.id : node for node in self.start_nodes}
@@ -171,7 +179,7 @@ class FIDEX_DAG(object):
         if not tolerate_incomplete_copy:
             for node in self.all_nodes:
                 if node.id not in node_lookup:
-                    raise Exception(f'Unreachable node.')
+                    raise Exception('Unreachable node.')
         new_all_nodes = [node_lookup[n_node.id] for n_node in self.all_nodes
                          if n_node.id in node_lookup]
         new_dag = FIDEX_DAG(new_all_nodes)
@@ -179,7 +187,7 @@ class FIDEX_DAG(object):
 
 
 # remove nodes that dont lead anywhere
-def DAG_leads_to_finish(edge : FIDEX_edge):
+def DAG_leads_to_finish(edge):
     if edge.end.has_marking(FIDEX_marking.FINISH):
         return True
     else:
@@ -194,7 +202,7 @@ def DAG_leads_to_finish(edge : FIDEX_edge):
             return True
 
 
-def DAG_prune_node(node : FIDEX_node):
+def DAG_prune_node(node):
 
     for edge in node.edges:
         DAG_prune_node(edge.end)
@@ -202,13 +210,13 @@ def DAG_prune_node(node : FIDEX_node):
     node.edges = [edge for edge in node.edges if not edge.leads_no_where]
 
 
-def DAG_collect_reachable_nodes(node : FIDEX_node, collection : Set[FIDEX_node]):
+def DAG_collect_reachable_nodes(node, collection):
     collection.add(node)
     for edge in node.edges:
         DAG_collect_reachable_nodes(edge.end, collection)
 
 
-def DAG_prune(dag : FIDEX_DAG):
+def DAG_prune(dag):
     dag = dag.copy()
     # mark the edges to be deleted.
     for node in dag.start_nodes:
@@ -228,7 +236,7 @@ def DAG_prune(dag : FIDEX_DAG):
     dag.start_nodes = [node for node in dag.all_nodes if node.has_marking(FIDEX_marking.START)]
     return dag
 
-def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
+def DAG_minus(orig_dag, minus_dag):
     orig_dag = orig_dag.copy()
     new_nodes = []
     for orig_node in orig_dag.start_nodes:
@@ -246,8 +254,8 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
     return new_dag
 
 
-def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
-                        new_nodes : List[FIDEX_node]) -> FIDEX_node:
+def DAG_minus_from_node(orig_node, minus_node,
+                        new_nodes):
     # copy the original node and add it to the list of created nodes.
     new_node = FIDEX_node([])
     edges = [FIDEX_edge(new_node, edge.end, edge.W_set.copy()) for edge in orig_node.edges]
@@ -272,8 +280,8 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
         new_node.edges = [edge for edge in new_node.edges if len(edge.W_set) > 0]
     return new_node
 
-def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,
-                            node_dict : Dict[Tuple[int,int],FIDEX_node]) -> FIDEX_node:
+def DAG_intersect_from_node(node1, node2,
+                            node_dict):
     # grab the node from the store if possible, otherwise create it.
     if (node1.id, node2.id) in node_dict:
         return node_dict[(node1.id, node2.id)]
@@ -294,7 +302,7 @@ def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,
                 new_node.edges.append(new_edge)
     return new_node
 
-def DAG_intersect(dag1 : FIDEX_DAG, dag2 : FIDEX_DAG) -> FIDEX_DAG:
+def DAG_intersect(dag1, dag2):
     node_dict = dict()
     for node1 in dag1.all_nodes:
         for node2 in dag2.all_nodes:

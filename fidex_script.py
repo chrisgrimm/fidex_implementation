@@ -1,5 +1,4 @@
 import os, sys, argparse, signal
-from typing import List, Optional, Tuple
 from learn_disjunctive_expr import learn_filter, pred_bindings
 from tokens import generality_score
 
@@ -8,15 +7,15 @@ parser.add_argument('words', type=str, nargs='+')
 args = parser.parse_args()
 
 
-def format_line(left_word : Optional[Tuple[int,str]], right_word : Optional[Tuple[int,str]]) -> str:
-    max_len = 10
-    to_str_right = lambda word_opt: '' if word_opt is None else f'{word_opt[1][:max_len]} [{word_opt[0]}]'
-    to_str_left = lambda word_opt: '' if word_opt is None else f'[{word_opt[0]}] {word_opt[1][:max_len]}'
-
-    line = f'{"+"+to_str_left(left_word):<{max_len+10}} {to_str_right(right_word)+"-":>{max_len+10}}'
+def format_line(left_word, right_word):
+    max_len = 30
+    to_str_right = lambda word_opt: '' if word_opt is None else ('%s [%s]' % (word_opt[1][:max_len], word_opt[0]))
+    to_str_left = lambda word_opt: '' if word_opt is None else ('[%s] %s' % (word_opt[0], word_opt[1][:max_len]))
+    line = ("+{:<%s} -{:>%s}" % (max_len+10, max_len+10)).format(to_str_left(left_word), to_str_right(right_word))
+    #line = f'{"+"+to_str_left(left_word):<{max_len+10}} {to_str_right(right_word)+"-":>{max_len+10}}'
     return line
 
-def format_words(positive_words : List[Tuple[int, str]], negative_words : List[Tuple[int, str]]) -> str:
+def format_words(positive_words, negative_words):
     lines = []
     for i in range(max(len(positive_words), len(negative_words))):
         pos_word = positive_words[i] if i < len(positive_words) else None
@@ -45,10 +44,10 @@ def interactive_loop():
             #print(token_seq)
             break
         except ValueError:
-            print(f'input must be an integer!')
+            print('input must be an integer!')
             continue
         except KeyError:
-            print(f'[{i}] does not match a word.')
+            print('[%s] does not match a word.' % i)
             continue
         # if the word is listed as filtered out
         if word in [w for i, w in minus_filtered]:

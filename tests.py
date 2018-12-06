@@ -2,7 +2,6 @@ import genDAG
 import fidex_dag
 import tokens
 from termcolor import colored
-from typing import List, Callable
 from genDAG import generate_startswith, generate_endswith, generate_contains
 from fidex_dag import DAG_minus, DAG_intersect
 
@@ -46,9 +45,9 @@ D2 = fidex_dag.FIDEX_DAG([q[3], q[4], q[5]])
 #combined_dag = fidex_dag.DAG_minus(D1, D2)
 #combined_dag.print_all_paths()
 
-def print_path_diagram(dags : List[fidex_dag.FIDEX_DAG],
-                       assertion_function : Callable[[List[bool]], bool],
-                       only_failures : bool = False):
+def print_path_diagram(dags,
+                       assertion_function,
+                       only_failures = False):
     all_paths = []
     for dag in dags:
         all_paths.extend([tuple(x) for x in dag.get_all_paths()])

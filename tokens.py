@@ -1,34 +1,32 @@
 import numpy as np
 import re
 from tokens import *
-from enum import Enum
-from typing import Set, List, Tuple, Optional
 
 class FIDEX_token(object):
 
-    def __init__(self, token_symbol : str):
+    def __init__(self, token_symbol):
         self.token_symbol = token_symbol
 
-    def match(self, s : str) -> bool:
+    def match(self, s):
         res = self.prefix_split_match(s)
         return (res is not None) and res[1] == ''
 
-    def prefix_split_match(self, s : str) -> Optional[Tuple[str, str]]:
+    def prefix_split_match(self, s):
         raise NotImplemented
 
     def __str__(self):
-        return f'<{self.token_symbol}>'
+        return '<%s>' % self.token_symbol
 
     def __repr__(self):
-        return f'<{self.token_symbol}>'
+        return '<%s>' % self.token_symbol
 
 class GeneralToken(FIDEX_token):
 
-    def __init__(self, token_symbol : str, match_rule : str):
-        super().__init__(token_symbol)
+    def __init__(self, token_symbol, match_rule):
+        super(GeneralToken, self).__init__(token_symbol)
         self.match_rule = match_rule
 
-    def prefix_split_match(self, s : str) -> Optional[Tuple[str, str]]:
+    def prefix_split_match(self, s):
         if len(s) == 0:
             return None
         match = re.match(r'^' + self.match_rule + r'$', s[0])
@@ -40,19 +38,20 @@ class GeneralToken(FIDEX_token):
 
 class ConstantToken(GeneralToken):
 
-    def __init__(self, token_symbol : str):
-        super().__init__(token_symbol, token_symbol)
+    def __init__(self, token_symbol):
+        super(ConstantToken, self).__init__(token_symbol, token_symbol)
 
 class SequenceToken(FIDEX_token):
 
-    def __init__(self, token_symbol : str, match_rule : str):
-        super().__init__(token_symbol)
+    def __init__(self, token_symbol, match_rule):
+        super(SequenceToken, self).__init__(token_symbol)
         self.match_rule = match_rule
 
-    def prefix_split_match(self, s : str) -> Optional[Tuple[str, str]]:
+    def prefix_split_match(self, s):
         if len(s) == 0:
             return None
-        re_string = f'^({self.match_rule}+)([\s\S]*)?$'
+
+        re_string = '^(%s+)([\s\S]*)?$' % (self.match_rule)
         match = re.match(re_string, s)
         if match is None:
             return None
@@ -61,7 +60,6 @@ class SequenceToken(FIDEX_token):
             rest_string = match.groups()[1]
             return (match_string, rest_string)
 
-tokens : List[FIDEX_token] = []
 
 rank0_tokens = []
 rank1_tokens = []
@@ -112,7 +110,7 @@ rank2_set = set(rank2_tokens)
 rank3_set = set(rank3_tokens)
 rank4_set = set(rank4_tokens)
 
-def generality_score(t : FIDEX_token) -> float:
+def generality_score(t):
     if t in rank0_set:
         return 1
     elif t in rank1_set:
@@ -124,7 +122,7 @@ def generality_score(t : FIDEX_token) -> float:
     elif t in rank4_set:
         return 5
     else:
-        raise Exception(f'unranked token {t}')
+        raise Exception('unranked token %s' % t)
 
 tokens = rank0_tokens + rank1_tokens + rank3_tokens + rank2_tokens + rank4_tokens
 
