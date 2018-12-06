@@ -1,12 +1,11 @@
 from typing import List
 import tokens
 from tokens import FIDEX_token
-from fidex_dag import FIDEX_node, FIDEX_edge, FIDEX_marking, FIDEX_DAG
+from fidex_dag import FIDEX_node, FIDEX_edge, FIDEX_marking, FIDEX_DAG, DAG_prune
 
 
 def genDAG_nodes(s : str) -> List[FIDEX_node]:
     nodes = [FIDEX_node([]) for i in range(0, len(s)+1)]
-
     for i in range(len(s)):
         available_tokens = set(tokens.tokens)
         for j in range(len(s), i, -1):
@@ -17,8 +16,6 @@ def genDAG_nodes(s : str) -> List[FIDEX_node]:
                 edge = FIDEX_edge(nodes[i], nodes[j], matched_tokens)
                 nodes[i].edges.append(edge)
     return nodes
-
-#genDAG_nodes2('cats')
 
 
 def mark_S1(nodes):
@@ -43,25 +40,25 @@ def generate_startswith(s : str) -> FIDEX_DAG:
     nodes = genDAG_nodes(s)
     mark_S1(nodes)
     mark_F1(nodes)
-    return FIDEX_DAG(nodes)
+    return DAG_prune(FIDEX_DAG(nodes))
 
 
 def generate_endswith(s : str) -> FIDEX_DAG:
     nodes = genDAG_nodes(s)
     mark_S2(nodes)
     mark_F2(nodes)
-    return FIDEX_DAG(nodes)
+    return DAG_prune(FIDEX_DAG(nodes))
 
 
 def generate_matches(s : str) -> FIDEX_DAG:
     nodes = genDAG_nodes(s)
     mark_S1(nodes)
     mark_F2(nodes)
-    return FIDEX_DAG(nodes)
+    return DAG_prune(FIDEX_DAG(nodes))
 
 
 def generate_contains(s : str) -> FIDEX_DAG:
     nodes = genDAG_nodes(s)
     mark_S2(nodes)
     mark_F1(nodes)
-    return FIDEX_DAG(nodes)
+    return DAG_prune(FIDEX_DAG(nodes))

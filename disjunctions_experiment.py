@@ -2,7 +2,7 @@ from typing import Callable, Tuple, List, Optional
 from learn_disjunctive_expr import Disjunction, learn_filter, learn_filter_no_disjunction, pred_bindings
 from genDAG import generate_startswith, generate_endswith, generate_matches, generate_contains
 from tokens import generality_score, FIDEX_token
-from instances import instances
+from instances import instances, Instance
 from fidex_dag import FIDEX_DAG
 from threading import Thread
 from multiprocessing import Process
@@ -12,18 +12,18 @@ import time
 import os
 
 
-def learn_instance(instance : Tuple[List[str], List[str]],
+def learn_instance(instance : Instance,
                    learn_filter_func,
                    pred_bindings):
 
     start = time.time()
 
-    positive, negative = instance
+    positive, negative = instance.positive_words, instance.negative_words
 
     positive_sample = [positive[0]]
-    negative_sample = []
+    negative_sample = [negative[0]]
     while True:
-        disj = learn_filter_func(positive_sample, negative_sample, generality_score, pred_bindings)
+        _, disj = learn_filter_func(positive_sample, negative_sample, generality_score, pred_bindings)
         if disj is not None:
             filtered_positive = set([p for p in (positive+negative) if disj.match(p)])
             filtered_negative = set([p for p in (positive+negative) if not disj.match(p)])
@@ -48,10 +48,12 @@ def learn_instance(instance : Tuple[List[str], List[str]],
         'num_negative_samples': len(negative_sample),
         'num_disjunctions': len(disj.sequences),
     }
+    with open('result.txt', 'wb') as f:
+        pickle.dump(result, f)
     return result
 
 
-def learn_instance_timeout(instance : Tuple[List[str], List[str]],
+def learn_instance_timeout(instance : Instance,
                            learn_filter_func,
                            pred_bindings,
                            seconds : int):
@@ -66,8 +68,8 @@ def learn_instance_timeout(instance : Tuple[List[str], List[str]],
     return result
 
 
-def get_data(instances : List[Tuple[List[str], List[str]]]):
-    timeout = 1000
+def get_data(instances : List[Instance]):
+    timeout = 10
     pred_sets = [('StartsWith', [pred_bindings['StartsWith']]),
                  ('EndsWith', [pred_bindings['EndsWith']]),
                  ('Matches', [pred_bindings['Matches']]),
@@ -87,14 +89,13 @@ def get_data(instances : List[Tuple[List[str], List[str]]]):
                        'Matches': [],
                        'Contains': [],
                        'All': []}}
+
     for (filter_func_name, learn_filter_func) in learn_filter_funcs:
         for (pred_set_name, pred_set) in pred_sets:
             for i, instance in enumerate(instances):
-                #if not (filter_func_name == 'FIDEX' and pred_set_name == 'EndsWith'):
-                #    continue
                 print(f'{filter_func_name}/{pred_set_name}/{i}')
-                #result = learn_instance_timeout(instance, learn_filter_func, pred_set, timeout)
-                result = learn_instance(instance, learn_filter_func, pred_set)
+                result = learn_instance_timeout(instance, learn_filter_func, pred_set, timeout)
+                #result = learn_instance(instance, learn_filter_func, pred_set)
                 print(f'\t{result}')
                 data[filter_func_name][pred_set_name].append(result)
     with open(os.path.join('experiment_data', 'perf_data.pickle'), 'wb') as f:

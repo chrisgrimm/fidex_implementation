@@ -1,4 +1,4 @@
-from fidex_dag import FIDEX_DAG, DAG_intersect, DAG_minus, FIDEX_marking
+from fidex_dag import FIDEX_DAG, DAG_intersect, DAG_minus, FIDEX_marking, DAG_prune
 from tokens import FIDEX_token
 from genDAG import generate_startswith, generate_endswith, generate_contains, generate_matches
 from random import shuffle
@@ -16,7 +16,6 @@ def learn_token_seq(s_plus : List[str],
         D_minus = pred(s)
         D = DAG_minus(D, D_minus)
     return D
-
 
 def merge_DAGs(D_tilde):
     D_tilde_res = []
@@ -62,14 +61,12 @@ def learn_disj_exprs_inc(D_tilde : List[FIDEX_DAG],
         for D_minus in D_tilde_minus:
             D = DAG_minus(D, D_minus)
             if D.is_empty():
-                print('EMPTY!')
                 return ([], D_tilde_minus)
         D_tilde.append(D)
     else:
         for i in range(len(D_tilde)):
             D_tilde[i] = DAG_minus(D_tilde[i], D)
             if D_tilde[i].is_empty():
-                print('EMPTY!')
                 return ([], D_tilde_minus)
         D_tilde_minus.append(D)
     #print(len(D_tilde))
@@ -172,33 +169,28 @@ def rank_DAGs(D_tilde : List[FIDEX_DAG],
     return Disjunction(seq_list, match_func)
 
 
-# TODO how does this work now?
 def learn_filter_no_disjunction(S_plus : List[str],
                                 S_minus : List[str],
                                 score : Callable[[FIDEX_token], float],
-                                pred_bindings) -> Optional[Disjunction]:
+                                pred_bindings) -> Optional[Tuple[str, Disjunction]]:
     #pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
     all_token_sequences = []
-    for pred_gen, pred_match in pred_bindings:
+    for pred_name, pred_gen, pred_match in pred_bindings:
         D = learn_token_seq(S_plus, S_minus, pred_gen)
         if D.is_empty():
             continue
         token_seq = rank_DAG(D, score)
-        return Disjunction([token_seq], pred_match)
+        return pred_name, Disjunction([token_seq], pred_match)
     return None
-
 
 
 
 def learn_filter(S_plus : List[str],
                  S_minus : List[str],
                  score : Callable[[FIDEX_token], float],
-                 pred_bindings) -> Optional[Disjunction]:
+                 pred_bindings) -> Optional[Tuple[str, Disjunction]]:
     #pred_list = [generate_startswith, generate_endswith, generate_matches, generate_contains]
-    for (pred_gen, pred_match) in pred_bindings:
-        #print('Adding:', S_plus[0], True)
-        #SS_plus, SS_minus = [S_plus[0]], []
-        #r = rank_DAGs(learn_disj_exprs(SS_plus, SS_minus, pred), score)
+    for (pred_name, pred_gen, pred_match) in pred_bindings:
         D_tilde, D_tilde_minus = learn_disj_exprs_inc([], [], S_plus[0], True, pred_gen)
         if len(D_tilde) == 0:
             continue
@@ -209,6 +201,7 @@ def learn_filter(S_plus : List[str],
         #print(f'fn: {false_negatives}, fp: {false_positives}')
         #SS_plus, SS_minus = [], []
         while len(false_negatives) > 0 or len(false_positives) > 0:
+            #print(false_negatives, false_positives)
             if len(false_negatives) > 0:
                 s = false_negatives[0]
                 is_pos = True
@@ -220,6 +213,8 @@ def learn_filter(S_plus : List[str],
             #print('here!')
             #r = rank_DAGs(learn_disj_exprs(SS_plus, SS_minus, pred), score)
             D_tilde, D_tilde_minus = learn_disj_exprs_inc(D_tilde, D_tilde_minus, s, is_pos, pred_gen)
+            #D_tilde = [DAG_prune(d) for d in D_tilde]
+
             if len(D_tilde) == 0:
                 break
             r = rank_DAGs(merge_DAGs(D_tilde), score, pred_match)
@@ -231,14 +226,14 @@ def learn_filter(S_plus : List[str],
             #    print(f'\t{l}')
         #return r
         if len(D_tilde) != 0:
-            return r
+            return pred_name, r
 
     return None
 
 
 pred_bindings = {
-    'StartsWith': (generate_startswith, match_sequence_startswith),
-    'EndsWith': (generate_endswith, match_sequence_endswith),
-    'Contains': (generate_contains, match_sequence_contains),
-    'Matches': (generate_matches, match_sequence_matches)
+    'StartsWith': ('StartsWith', generate_startswith, match_sequence_startswith),
+    'EndsWith': ('EndsWith', generate_endswith, match_sequence_endswith),
+    'Contains': ('Contains', generate_contains, match_sequence_contains),
+    'Matches': ('Matches', generate_matches, match_sequence_matches)
 }

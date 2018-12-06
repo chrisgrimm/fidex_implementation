@@ -27,10 +27,9 @@ class FIDEX_edge(object):
         self.end = end
         self.leads_no_where = False
 
-
-
     def __str__(self):
         return f'Edge({self.start}, {self.end}, {self.W_set})'
+
 
 class FIDEX_node(object):
 
@@ -47,7 +46,6 @@ class FIDEX_node(object):
 
     def add_marking(self, marking):
         self.markings.add(marking)
-
 
     def remove_marking(self, marking):
         self.markings.remove(marking)
@@ -66,8 +64,6 @@ class FIDEX_node(object):
         for edge in self.edges:
             yield edge
             yield from edge.end.edge_iterator()
-
-
 
     def node_iterator(self):
         yield self
@@ -117,6 +113,7 @@ class FIDEX_node(object):
             else:
                 copy_end_node = edge.end.copy(node_lookup)
             new_edge = FIDEX_edge(copy_node, copy_end_node, edge.W_set.copy())
+            new_edge.leads_no_where = edge.leads_no_where
             copy_node.edges.append(new_edge)
         return copy_node
 
@@ -128,6 +125,7 @@ class FIDEX_DAG(object):
         self.start_nodes = [node for node in all_nodes
                             if node.has_marking(FIDEX_marking.START)]
 
+    # TODO this function probably shouldnt exist.
     def match(self, s : str) -> bool:
         for node in self.start_nodes:
             if node.match(s):
@@ -188,23 +186,27 @@ def DAG_leads_to_finish(edge : FIDEX_edge):
         leads_to_finish = False
         for next_edge in edge.end.edges:
             other_edge = DAG_leads_to_finish(next_edge)
-            leads_to_finish = leads_to_finish or other_edge
+            leads_to_finish = other_edge or leads_to_finish
         if not leads_to_finish:
             edge.leads_no_where = True
             return False
         else:
             return True
 
+
 def DAG_prune_node(node : FIDEX_node):
-    node.edges = [edge for edge in node.edges if not edge.leads_no_where]
 
     for edge in node.edges:
         DAG_prune_node(edge.end)
+
+    node.edges = [edge for edge in node.edges if not edge.leads_no_where]
+
 
 def DAG_collect_reachable_nodes(node : FIDEX_node, collection : Set[FIDEX_node]):
     collection.add(node)
     for edge in node.edges:
         DAG_collect_reachable_nodes(edge.end, collection)
+
 
 def DAG_prune(dag : FIDEX_DAG):
     dag = dag.copy()
@@ -213,7 +215,7 @@ def DAG_prune(dag : FIDEX_DAG):
         for edge in node.edges:
             DAG_leads_to_finish(edge)
     # remove marked edges.
-    for node in dag.start_nodes:
+    for node in dag.start_nodes[:]:
         DAG_prune_node(node)
 
     reachable_set = set()
@@ -225,11 +227,6 @@ def DAG_prune(dag : FIDEX_DAG):
     dag.all_nodes = list(reachable_set)
     dag.start_nodes = [node for node in dag.all_nodes if node.has_marking(FIDEX_marking.START)]
     return dag
-
-
-
-
-
 
 def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
     orig_dag = orig_dag.copy()
@@ -249,7 +246,6 @@ def DAG_minus(orig_dag : FIDEX_DAG, minus_dag : FIDEX_DAG) -> FIDEX_DAG:
     return new_dag
 
 
-
 def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
                         new_nodes : List[FIDEX_node]) -> FIDEX_node:
     # copy the original node and add it to the list of created nodes.
@@ -262,10 +258,11 @@ def DAG_minus_from_node(orig_node : FIDEX_node, minus_node : FIDEX_node,
         new_node.add_marking(FIDEX_marking.FINISH)
 
     for minus_edge in minus_node.edges:
-        # TODO why do I copy here?
-        for node_edge in new_node.edges[:]:
-            non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set)).copy()
-            minus_condition = (node_edge.W_set.intersection(minus_edge.W_set)).copy()
+        # Copy edges list here so we dont keep building up new nodes and run forever.
+        for node_edge_i in range(len(new_node.edges)):
+            node_edge = new_node.edges[node_edge_i]
+            non_minus_condition = (node_edge.W_set.difference(minus_edge.W_set))
+            minus_condition = (node_edge.W_set.intersection(minus_edge.W_set))
             node_edge.W_set = non_minus_condition
             if len(minus_condition) > 0:
                 minus_edge_node = DAG_minus_from_node(node_edge.end, minus_edge.end, new_nodes)
@@ -290,7 +287,7 @@ def DAG_intersect_from_node(node1 : FIDEX_node, node2 : FIDEX_node,
     # build the edges of the new node
     for node1_edge in node1.edges:
         for node2_edge in node2.edges:
-            new_W_set = (node1_edge.W_set.intersection(node2_edge.W_set)).copy()
+            new_W_set = (node1_edge.W_set.intersection(node2_edge.W_set))
             if len(new_W_set) > 0:
                 end_node = DAG_intersect_from_node(node1_edge.end, node2_edge.end, node_dict)
                 new_edge = FIDEX_edge(new_node, end_node, new_W_set)

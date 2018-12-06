@@ -10,11 +10,8 @@ class FIDEX_token(object):
         self.token_symbol = token_symbol
 
     def match(self, s : str) -> bool:
-        split = self.split_match(s)
-        return split is not None
-
-    def split_match(self, s : str) -> Optional[Tuple[str, str]]:
-        raise NotImplemented
+        res = self.prefix_split_match(s)
+        return (res is not None) and res[1] == ''
 
     def prefix_split_match(self, s : str) -> Optional[Tuple[str, str]]:
         raise NotImplemented
@@ -30,15 +27,6 @@ class GeneralToken(FIDEX_token):
     def __init__(self, token_symbol : str, match_rule : str):
         super().__init__(token_symbol)
         self.match_rule = match_rule
-
-    def split_match(self, s : str) -> Optional[Tuple[str, str]]:
-        if len(s) == 0:
-            return None
-        match = re.match(r'^'+self.match_rule+r'$', s)
-        if match:
-            return (s[0], '')
-        else:
-            return None
 
     def prefix_split_match(self, s : str) -> Optional[Tuple[str, str]]:
         if len(s) == 0:
@@ -60,18 +48,6 @@ class SequenceToken(FIDEX_token):
     def __init__(self, token_symbol : str, match_rule : str):
         super().__init__(token_symbol)
         self.match_rule = match_rule
-
-    def split_match(self, s : str) -> Optional[Tuple[str, str]]:
-        if len(s) == 0:
-            return None
-        re_string = f'^({self.match_rule}+)$'
-        match = re.match(re_string, s)
-        if match is None:
-            return None
-        else:
-            match_string = match.groups()[0]
-            rest_string = s[len(match_string):]
-            return (match_string, rest_string)
 
     def prefix_split_match(self, s : str) -> Optional[Tuple[str, str]]:
         if len(s) == 0:
@@ -99,6 +75,7 @@ letters = {letter : token for letter, token in zip('abcdefghijklmnopqrstuvwxyz',
 rank0_tokens += [ConstantToken(letter) for letter in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 rank0_tokens += [ConstantToken(number) for number in '0123456789']
 rank0_tokens += [GeneralToken('-', '\-'),
+           GeneralToken('_', '\_'),
            GeneralToken('.', '\.'),
            GeneralToken(';', '\;'),
            GeneralToken(':', '\:'),
@@ -151,4 +128,3 @@ def generality_score(t : FIDEX_token) -> float:
 
 tokens = rank0_tokens + rank1_tokens + rank3_tokens + rank2_tokens + rank4_tokens
 
-print(len(tokens))

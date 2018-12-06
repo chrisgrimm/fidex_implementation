@@ -1,7 +1,6 @@
 import genDAG
 import fidex_dag
 import tokens
-import pandas as pd
 from termcolor import colored
 from typing import List, Callable
 from genDAG import generate_startswith, generate_endswith, generate_contains
